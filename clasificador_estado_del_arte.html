@@ -1127,7 +1127,7 @@
       dot.className = 'api-key-dot ' + (val ? 'set' : 'unset');
     }
 
-    async function callAPI(prompt, maxTokens) {
+    async function callAPI(prompt, maxTokens, model = null) {
       const key = getApiKey();
       if (!key) { log('⚠ Sin API key — guarda tu clave en el header', 'err'); return null; }
       const provider = getProvider();
@@ -1137,7 +1137,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
             body: JSON.stringify({
-              model: 'gpt-4o', max_tokens: maxTokens,
+              model: model || 'gpt-4o', max_tokens: maxTokens,
               messages: [{ role: 'user', content: prompt }]
             })
           });
@@ -1152,7 +1152,7 @@
               'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true'
             },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-6', max_tokens: maxTokens,
+              model: model || 'claude-sonnet-4-6', max_tokens: maxTokens,
               messages: [{ role: 'user', content: prompt }]
             })
           });
@@ -1410,7 +1410,7 @@ Respond ONLY with valid JSON array, no markdown. Use the exact numeric ID from e
 [{"id":${papers[0].i},"abstract_es":"..."}]`;
 
       try {
-        const text = await callAPI(prompt, 4000);
+        const text = await callAPI(prompt, 4000, 'claude-haiku-4-5-20251001');
         if (!text) { await sleep(2000); return; }
         const clean = text.replace(/```json|```/g, '').trim();
         const results = JSON.parse(clean);
@@ -2171,7 +2171,7 @@ Format: [{"id": N, "tiEs": "translated title"}]
 ${papers.map(p => `[ID:${p.i}] ${p.ti}`).join('\n')}`;
 
       try {
-        const text = await callAPI(prompt, 2000);
+        const text = await callAPI(prompt, 2000, 'claude-haiku-4-5-20251001');
         if (!text) { await sleep(2000); return; }
         const clean = text.replace(/```json|```/g, '').trim();
         const results = JSON.parse(clean);
