@@ -2149,11 +2149,10 @@ Respond ONLY with valid JSON array, no markdown. Use the exact numeric ID from e
       const untranslated = PAPERS.filter(p => !(translations[p.i] && translations[p.i].tiEs));
       log(`Traduciendo ${untranslated.length} títulos al español...`, 'info');
 
-      const BATCH = 20;
+      const BATCH = 10;
       for (let i = 0; i < untranslated.length && !stopFlag; i += BATCH) {
         const batch = untranslated.slice(i, i + BATCH);
         await translateTitlesBatch(batch);
-        const done = Math.min(i + BATCH, untranslated.length);
         const totalPapers = PAPERS.length;
         const translatedCount = PAPERS.filter(p => translations[p.i] && translations[p.i].tiEs).length;
         const pct = Math.round((translatedCount / totalPapers) * 100);
@@ -2161,7 +2160,7 @@ Respond ONLY with valid JSON array, no markdown. Use the exact numeric ID from e
         document.getElementById('transTitlePct').textContent = pct + '%';
         document.getElementById('transTitleLabel').textContent = `${translatedCount}/${totalPapers}`;
         await saveDB();
-        await sleep(300);
+        if (!stopFlag) await sleep(15000); // 15s para respetar rate limit
       }
 
       const finalCount = PAPERS.filter(p => translations[p.i] && translations[p.i].tiEs).length;
@@ -2198,8 +2197,22 @@ ${papers.map(p => `[ID:${p.i}] ${p.ti}`).join('\n')}`;
         });
         log(`✓ Títulos traducidos: ${papers.length}`, 'ok');
       } catch (e) {
-        log(`✗ Error traducción títulos: ${e.message}`, 'err');
-        await sleep(2000);
+        log(`✗ Error en lote títulos, reintentando uno a uno...`, 'warn');
+        for (const paper of papers) {
+          if (stopFlag) break;
+          try {
+            const p2 = `Translate this academic paper title to Spanish. Return ONLY JSON: {"id":${paper.i},"tiEs":"..."}\n\n${paper.ti}`;
+            const text2 = await callAPI(p2, 300, 'claude-haiku-4-5-20251001');
+            if (!text2) { await sleep(1000); continue; }
+            const r = JSON.parse(text2.replace(/```json|```/g, '').trim());
+            if (!translations[paper.i]) translations[paper.i] = {};
+            translations[paper.i].tiEs = r.tiEs || '';
+            log(`✓ Título ${paper.i} traducido`, 'ok');
+          } catch (e2) {
+            log(`✗ Error título ${paper.i}: ${e2.message}`, 'err');
+          }
+          await sleep(3000);
+        }
       }
     }
 
