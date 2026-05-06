@@ -1367,7 +1367,7 @@ Respond ONLY with valid JSON array, no markdown. Use the exact numeric ID from e
       document.getElementById('btnTranslate2').disabled = true;
 
       // ALL papers — no exceptions
-      const untranslated = PAPERS.filter(p => !translations[p.i]);
+      const untranslated = PAPERS.filter(p => !(translations[p.i] && translations[p.i].abEs));
       log(`Traduciendo ${untranslated.length} abstracts al español...`, 'info');
 
       const BATCH = 8;
