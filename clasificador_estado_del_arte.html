@@ -1804,14 +1804,22 @@ Respond ONLY with valid JSON array, no markdown. Use the exact numeric ID from e
       if (!data) return;
       const existing = decisions[currentDetailIdx] || {};
       decisions[currentDetailIdx] = { ...data, starred: existing.starred || false };
-      // Save editable classification fields
+      // Save editable classification fields only if AI already classified it or user checked boxes
+      const wasClassified = !!classified[currentDetailIdx];
       const c = classified[currentDetailIdx] || {};
+      let anyChecked = false;
       ['llm', 'rea', 'mal', 'aut', 'sem', 'syt', 'bte', 'cas'].forEach(f => {
         const el = document.getElementById('clf_' + f);
-        if (el) c[f] = [...el.querySelectorAll('.clf-cb:checked')].map(cb => cb.value).join(', ');
+        if (el) {
+          const val = [...el.querySelectorAll('.clf-cb:checked')].map(cb => cb.value).join(', ');
+          c[f] = val;
+          if (val) anyChecked = true;
+        }
       });
-      c.priority = computePriority(c);
-      classified[currentDetailIdx] = c;
+      if (wasClassified || anyChecked) {
+        c.priority = computePriority(c);
+        classified[currentDetailIdx] = c;
+      }
       saveDB();
       renderTable();
       updateStats();
@@ -1825,13 +1833,21 @@ Respond ONLY with valid JSON array, no markdown. Use the exact numeric ID from e
       if (!data) return;
       const existingN = decisions[currentDetailIdx] || {};
       decisions[currentDetailIdx] = { ...data, starred: existingN.starred || false };
+      const wasClassifiedN = !!classified[currentDetailIdx];
       const c = classified[currentDetailIdx] || {};
+      let anyCheckedN = false;
       ['llm', 'rea', 'mal', 'aut', 'sem', 'syt', 'bte', 'cas'].forEach(f => {
         const el = document.getElementById('clf_' + f);
-        if (el) c[f] = [...el.querySelectorAll('.clf-cb:checked')].map(cb => cb.value).join(', ');
+        if (el) {
+          const val = [...el.querySelectorAll('.clf-cb:checked')].map(cb => cb.value).join(', ');
+          c[f] = val;
+          if (val) anyCheckedN = true;
+        }
       });
-      c.priority = computePriority(c);
-      classified[currentDetailIdx] = c;
+      if (wasClassifiedN || anyCheckedN) {
+        c.priority = computePriority(c);
+        classified[currentDetailIdx] = c;
+      }
       saveDB();
       renderTable();
       updateStats();
